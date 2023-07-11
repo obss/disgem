@@ -289,7 +289,9 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         )
         # Compare distractors with the answer
         answer_distractor_evaluation_results = self.evaluator(processed_input)
-        mask = np.array(answer_distractor_evaluation_results) != "contradiction"
+        check = lambda x: "entailment" in x[0]
+        mask = np.apply_along_axis(check, arr=np.array(answer_distractor_evaluation_results).reshape(-1, 1), axis=-1)
+        # mask = np.array(answer_distractor_evaluation_results) != "contradiction"
         outputs_array = np.array(outputs, dtype=dict)
         filtered_distractors = outputs_array[~mask]
 

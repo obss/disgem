@@ -74,6 +74,7 @@ class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
         sentence: str,
         answer: Dict,
         distractor: Union[str, Dict] = None,
+        reverse: bool = False,
         **kwargs,
     ) -> str:
         if distractor is None:
@@ -83,6 +84,8 @@ class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
         context_with_distractor = replace_str(
             sentence, distractor, answer["start"], answer["end"]
         )
+        if reverse:
+            return context_with_distractor + " " + sentence
         return sentence + " " + context_with_distractor
 
     def preprocess_distractors(
@@ -125,7 +128,9 @@ class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
             for distractor in inputs["distractors"]:
                 input_text = self.preprocess(**inputs, distractor=distractor)
                 nli_output = self.get_model_output(input_text)
-                results.append(nli_output)
+                input_text_rev = self.preprocess(**inputs, distractor=distractor, reverse=True)
+                nli_output_rev = self.get_model_output(input_text_rev)
+                results.append(nli_output + "-" + nli_output_rev)
             return results
         else:
             distractor1 = inputs["distractors"][distractor_ids[0]]

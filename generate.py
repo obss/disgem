@@ -62,7 +62,16 @@ def main(args):
 		if args.data_format == "cloth":
 			pipe_out = cloth_fill_pipe(ctx, top_k=1)
 			for out in pipe_out:
-				ctx = ctx.replace("<mask>", out[0]["token_str"], 1)
+				substr = " <mask> "
+				mask_idx = ctx.find(substr)
+				filled_str = out[0]["token_str"]
+				ctx = ctx.replace(substr, filled_str, 1)
+				if -1 < mask_idx < instance.answer["start"]:
+					# For replaced mask tokens we need to fix the answer start and end
+					# positions to not break the generation process. -1 means not found.
+					char_displacement = len(filled_str) - len(substr)
+					instance.answer["start"] += char_displacement
+					instance.answer["end"] += char_displacement
 		generations = distractor_generator(
 				context=ctx,
 				answer=instance.answer,
@@ -88,4 +97,3 @@ def main(args):
 if __name__ == "__main__":
 	args = create_args()
 	main(args)
-	

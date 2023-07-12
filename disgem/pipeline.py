@@ -116,6 +116,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         )
         self._strategy: str = "snowball"
         self._use_harmonic_mean: bool = True
+        self._search_multiplier: int = 4
         self.evaluator = NLIBasedDistractorEvaluator()
         self.spacy = spacy.load("en_core_web_sm")
 
@@ -171,6 +172,10 @@ class DistractorGenerationPipeline(FillMaskPipeline):
             if top_k < 1:
                 raise ValueError("'top_k' must be at least 1.")
             postprocess_params["top_k"] = top_k
+
+        if dispersion == 0:
+            # Raising the search multiplier to not shrink search space too low.
+            self._search_multiplier = 7
 
         if self.tokenizer.mask_token_id is None:
             raise PipelineException(
@@ -289,7 +294,9 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         )
         # Compare distractors with the answer
         answer_distractor_evaluation_results = self.evaluator(processed_input)
-        mask = np.array(answer_distractor_evaluation_results) != "contradiction"
+        check = lambda x: "entailment" in x[0]
+        mask = np.apply_along_axis(check, arr=np.array(answer_distractor_evaluation_results).reshape(-1, 1), axis=-1)
+        # mask = np.array(answer_distractor_evaluation_results) != "contradiction"
         outputs_array = np.array(outputs, dtype=dict)
         filtered_distractors = outputs_array[~mask]
 
@@ -377,7 +384,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         ]
         postprocess_params_ = deepcopy(postprocess_params)
         if is_start:
-            postprocess_params_["top_k"] *= 4
+            postprocess_params_["top_k"] *= self._search_multiplier
         else:
             postprocess_params_["top_k"] = 1
         outputs = [

@@ -1,7 +1,6 @@
-import itertools
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
-from transformers import AutoModelForMaskedLM, AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForMaskedLM, AutoTokenizer
 
 from disgem.pipeline import (
     DistractorGenerationPipeline,
@@ -47,16 +46,22 @@ class MaskedLMBasedDistractorGenerator:
         context: str,
         answer: Dict[str, Union[int, str]],
         minify_output: bool = True,
+        only_strings: bool = True,
         **kwargs,
     ) -> Union[List[Dict[str, Union[str, float]]], DistractorGenerationOutput]:
         instance = {"context": context, "answer": answer}
         outputs = self._pipeline(instance, **kwargs)
         if minify_output:
-            return [
-                {
-                    "text": distractor["token_str"],
-                    "score": distractor["ranking_score"],
-                }
-                for distractor in outputs.distractors
-            ]
+            if not only_strings:
+                return [
+                    {
+                        "text": distractor["token_str"],
+                        "score": distractor["ranking_score"],
+                    }
+                    for distractor in outputs.distractors
+                ]
+            else:
+                return [
+                    distractor["token_str"] for distractor in outputs.distractors
+                ]
         return outputs

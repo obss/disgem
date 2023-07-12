@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from typing import Dict, List, Union
 
@@ -19,6 +20,11 @@ def harmonic_mean(values: List) -> Union[int, float]:
     return len(values) / np.sum(1 / np.array(values))
 
 
+def read_json(filepath: str):
+    with open(filepath, "r") as fd_in:
+        return json.load(fd_in)
+
+
 @dataclass
 class DistractorGenerationOutput(ModelOutput):
     """
@@ -33,4 +39,4 @@ class DistractorGenerationOutput(ModelOutput):
 
     distractors: List[Dict] = None
     discarded_distractors: List[Dict] = None
-    
+

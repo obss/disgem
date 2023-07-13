@@ -102,6 +102,9 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         binary_output: bool = False,
         **kwargs,
     ):
+        self._strategy: str = "snowball"
+        self._use_harmonic_mean: bool = True
+        self._search_multiplier: int = 4
         super(DistractorGenerationPipeline, self).__init__(
             model,
             tokenizer,
@@ -114,9 +117,6 @@ class DistractorGenerationPipeline(FillMaskPipeline):
             binary_output,
             **kwargs,
         )
-        self._strategy: str = "snowball"
-        self._use_harmonic_mean: bool = True
-        self._search_multiplier: int = 4
         self.evaluator = NLIBasedDistractorEvaluator()
         self.spacy = spacy.load("en_core_web_sm")
 
@@ -173,9 +173,9 @@ class DistractorGenerationPipeline(FillMaskPipeline):
                 raise ValueError("'top_k' must be at least 1.")
             postprocess_params["top_k"] = top_k
 
-        if dispersion == 0:
+        if single_mask or (dispersion == 0 and n_mask == 1):
             # Raising the search multiplier to not shrink search space too low.
-            self._search_multiplier = 7
+            self._search_multiplier = 8
 
         if self.tokenizer.mask_token_id is None:
             raise PipelineException(
@@ -317,7 +317,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
                         "with": processed_input["distractors"][j]["token_str"],
                     }
                 )
-                if nli_out == "entailment":
+                if nli_out == "entailment-entailment":
                     increment = False
                     discarded_distractors.append(
                         processed_input["distractors"].pop(kept_index)

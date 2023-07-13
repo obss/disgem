@@ -29,7 +29,8 @@ def create_args():
 	parser.add_argument("--no-minify-output", action="store_true", help="If given, no minification is placed on outputs.")
 	parser.add_argument("--strategy", type=str, default="snowball", help="Generation strategy for the generation phase.By default 'snowball'.")
 	parser.add_argument("--n-mask", type=int, default=None, help="Number of mask tokens to be replaced with answer text. Default `none`.")
-	parser.add_argument("--use-geometric-mean", action="store_true", help="If given, uses geometric mean to determine final ranking. Default is harmonic mean.")
+	parser.add_argument("--use-geometric-mean", action="store_true", help="If given, uses geometric mean to determine final ranking, otherwise uses harmonic mean.")
+	parser.add_argument("--single-mask", action="store_true", help="If given, only applies a single mask to replace the answer. It is the same as setting `dispersion=0` and `n_mask=1`.")
 	parser.add_argument("--seed", type=int, default=42, help="Seed for RNG. Default 42.")
 	return parser.parse_args()
 
@@ -54,6 +55,7 @@ def main(args):
 		n_mask=args.n_mask,
 		device=args.device,
 		strategy=args.strategy,
+		single_mask=args.single_mask
 	)
 
 	outputs = []
@@ -62,7 +64,7 @@ def main(args):
 		if args.data_format == "cloth":
 			pipe_out = cloth_fill_pipe(ctx, top_k=1)
 			for out in pipe_out:
-				substr = " <mask> "
+				substr = "<mask>"
 				mask_idx = ctx.find(substr)
 				filled_str = out[0]["token_str"]
 				ctx = ctx.replace(substr, filled_str, 1)
@@ -78,7 +80,7 @@ def main(args):
 				minify_output=not args.no_minify_output,
 				top_k=args.top_k,
 				use_harmonic_mean=not args.use_geometric_mean,
-				batch_size=args.batch_size,
+				batch_size=args.batch_size
 		)
 		outputs.append(
 				{

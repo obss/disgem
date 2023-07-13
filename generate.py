@@ -2,11 +2,13 @@ import argparse
 import json
 import warnings
 
+import numpy as np
 from tqdm import tqdm
 from transformers import FillMaskPipeline, AutoModelForMaskedLM, AutoTokenizer
 
 from disgem import MaskedLMBasedDistractorGenerator
 from disgem.data_loader import ClothLoader, CdgpLoader, SquadLoader
+from disgem.util import read_json, harmonic_mean
 
 
 def create_args():
@@ -32,6 +34,7 @@ def create_args():
 	parser.add_argument("--use-geometric-mean", action="store_true", help="If given, uses geometric mean to determine final ranking, otherwise uses harmonic mean.")
 	parser.add_argument("--single-mask", action="store_true", help="If given, only applies a single mask to replace the answer. It is the same as setting `dispersion=0` and `n_mask=1`.")
 	parser.add_argument("--seed", type=int, default=42, help="Seed for RNG. Default 42.")
+	parser.add_argument("--evaluate", action="store_true", help="If given, starts evaluation process rather than generation. You must supply result json file for evaluation.")
 	return parser.parse_args()
 
 
@@ -60,6 +63,9 @@ def main(args):
 
 	outputs = []
 	for i, instance in enumerate(tqdm(data_loader)):
+		if i == args.question_limit:
+			break
+
 		ctx = instance.context
 		if args.data_format == "cloth":
 			pipe_out = cloth_fill_pipe(ctx, top_k=1)
@@ -88,14 +94,87 @@ def main(args):
 					"distractors": instance.distractors
 				}
 		)
-		if i == args.question_limit:
-			break
+
 
 	if args.output_path is not None:
 		with open(args.output_path, "w") as fd_out:
 			json.dump(outputs, fd_out)
 
 
+def evaluate(args):
+	"""
+
+	Args:
+		args:
+
+	Returns:
+
+	"""
+
+	# metrics
+	def precision(preds, targets, k: int = 1):
+		matches = [int(generation in targets) for generation in preds]
+		return sum(matches[:k]) / k
+
+	def recall(preds, targets, k: int = 1):
+		matches = [int(generation in targets) for generation in preds]
+		return sum(matches[:k]) / len(targets)
+
+	def f1(preds, targets, k: int = 1):
+		p = precision(preds, targets, k)
+		r = recall(preds, targets, k)
+		return harmonic_mean([p, r])
+
+	def ndcg_at_k(preds, targets, k: int = 1):
+		def dcg_at_k(r, k):
+			r = np.asfarray(r)[:k]
+			if r.size:
+				return r[0] + np.sum(r[1:] / np.log2(np.arange(2, r.size + 1)))
+			return 0.
+		r = [int(generation in targets) for generation in preds]
+		idcg = dcg_at_k(sorted(r, reverse=True), k)
+		if not idcg:
+			return 0.
+		return dcg_at_k(r, k) / idcg
+
+	outputs = read_json(args.filepath)
+	avg_eval = {
+		"P@1"   : 0.0, "P@3": 0.0, "P@5": 0.0, "P@10"  : 0.0,
+		"R@1": 0.0, "R@3": 0.0, "R@5": 0.0, "R@10": 0.0,
+		"F1@1": 0.0,  "F1@3": 0.0,   "F1@5"  : 0.0, "F1@10": 0.0,
+		"NDCG@1": 0.0, "NDCG@3": 0.0, "NDCG@5": 0.0, "NDCG@10": 0.0}
+	for output in outputs:
+		distractors = [d.lower() for d in output["distractors"]]
+		generations = [d.lower() for d in output["generations"]]
+
+		for key in avg_eval.keys():
+			metric, k = key.split("@")
+			if metric == "P":
+				metric_fn = precision
+			elif metric == "R":
+				metric_fn = recall
+			elif metric == "F1":
+				metric_fn = f1
+			elif metric == "NDCG":
+				metric_fn = ndcg_at_k
+			else:
+				continue
+			avg_eval[key] += metric_fn(preds=generations, targets=distractors, k=int(k))
+
+	# calculate average
+	for key in avg_eval.keys():
+		avg_eval[key] /= len(outputs)
+		avg_eval[key] = str(round(100 * avg_eval[key], 4)) + "%"
+
+	print(json.dumps(avg_eval, indent=2))
+	if args.output_path is not None:
+		with open(args.output_path, "w") as fd_out:
+			json.dump(avg_eval, fd_out, indent=2)
+
+
 if __name__ == "__main__":
 	args = create_args()
-	main(args)
+	if args.evaluate:
+		evaluate(args)
+	else:
+		main(args)

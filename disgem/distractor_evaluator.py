@@ -139,4 +139,9 @@ class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
                 **inputs, distractor1=distractor1, distractor2=distractor2
             )
             nli_output = self.get_model_output(input_text)
-            return nli_output
+
+            input_text_rev = self.preprocess_distractors(
+                    **inputs, distractor1=distractor2, distractor2=distractor1
+            )
+            nli_output_rev = self.get_model_output(input_text_rev)
+            return f"{nli_output}-{nli_output_rev}"

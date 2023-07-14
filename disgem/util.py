@@ -7,7 +7,7 @@ from transformers.utils import ModelOutput
 
 
 def replace_str(s: str, new: str, start_index: int, end_index: int) -> str:
-    if start_index not in range(len(s)) or end_index not in range(len(s)):
+    if start_index not in range(len(s)) or end_index not in range(len(s) + 1):
         raise ValueError("index outside given string")
     return s[:start_index] + new + s[end_index:]
 

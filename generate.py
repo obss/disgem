@@ -95,7 +95,6 @@ def main(args):
 				}
 		)
 
-
 	if args.output_path is not None:
 		with open(args.output_path, "w") as fd_out:
 			json.dump(outputs, fd_out)

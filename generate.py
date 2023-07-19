@@ -68,6 +68,9 @@ def main(args):
 
 		ctx = instance.context
 		if args.data_format == "cloth":
+			if len(tokenizer.encode(ctx)) > tokenizer.model_max_length:
+				# Skip if tokenized context does not fit into model max input length
+				continue
 			pipe_out = cloth_fill_pipe(ctx, top_k=1)
 			for out in pipe_out:
 				substr = "<mask>"

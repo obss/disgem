@@ -62,8 +62,9 @@ def main(args):
 	)
 
 	outputs = []
-	for i, instance in enumerate(tqdm(data_loader)):
-		if i == args.question_limit:
+	count = 0
+	for instance in tqdm(data_loader):
+		if count == args.question_limit:
 			break
 
 		ctx = instance.context
@@ -97,6 +98,7 @@ def main(args):
 					"distractors": instance.distractors
 				}
 		)
+		count += 1
 
 	if args.output_path is not None:
 		with open(args.output_path, "w") as fd_out:

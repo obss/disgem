@@ -10,10 +10,10 @@ conda env create -f environment.yml
 
 ## Generate Distractors
 
-To use CLOTH dataset, download with
+Download datasets by the following command. This script will download CLOTH and DGen datasets.
 
 ```shell
-bash scripts/download_cloth.sh
+bash scripts/download_data.sh
 ```
 
 To generate distractors for CLOTH test-high dataset, run the following command. You can alter `top-k` and `dispersion` parameters.

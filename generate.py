@@ -143,11 +143,20 @@ def evaluate(args):
 			return 0.
 		return dcg_at_k(r, k) / idcg
 
+	def mmr_at_k(preds, targets, k: int = 1):
+		matches = [int(generation in targets) for generation in preds]
+		k = len(matches) if k > len(matches) else k
+		for i in range(k):
+			if matches[i] == 1:
+				return 1 / (i+1)
+		return .0
+
 	outputs = read_json(args.filepath)
 	avg_eval = {
 		"P@1"   : 0.0, "P@3": 0.0, "P@5": 0.0, "P@10"  : 0.0,
 		"R@1": 0.0, "R@3": 0.0, "R@5": 0.0, "R@10": 0.0,
 		"F1@1": 0.0,  "F1@3": 0.0,   "F1@5"  : 0.0, "F1@10": 0.0,
+		"MRR@1": 0.0, "MRR@3": 0.0, "MRR@5": 0.0, "MRR@10": 0.0,
 		"NDCG@1": 0.0, "NDCG@3": 0.0, "NDCG@5": 0.0, "NDCG@10": 0.0}
 	for output in outputs:
 		distractors = [d.lower() for d in output["distractors"]]
@@ -163,6 +172,8 @@ def evaluate(args):
 				metric_fn = f1
 			elif metric == "NDCG":
 				metric_fn = ndcg_at_k
+			elif metric == "MRR":
+				metric_fn = mmr_at_k
 			else:
 				continue
 			avg_eval[key] += metric_fn(preds=generations, targets=distractors, k=int(k))

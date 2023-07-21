@@ -76,6 +76,7 @@ class ClothLoader(DataLoader):
     a form compatible for distractor generation.
     See the home page for CLOTH: https://www.cs.cmu.edu/~glai1/data/cloth/
     """
+    _dataset_mask_str = " _ "
     _pipeline_mask_str = "<mask>"
 
     def __iter__(self) -> Instance:
@@ -126,9 +127,9 @@ class ClothLoader(DataLoader):
             answers = []
             distractors = []
             for choices, answer in zip(data["options"], data["answers"]):
-                start = ctx.find(" _ ")
+                start = ctx.find(self._dataset_mask_str)
                 ans, opt = self.get_option(choices, answer)
-                ctx = ctx.replace(" _ ", self._pipeline_mask_str, 1)  # only replace 1 occurance
+                ctx = ctx.replace(self._dataset_mask_str, self._pipeline_mask_str, 1)  # only replace 1 occurance
                 answer = {"text": ans, "start": start}
                 answer["end"] = answer["start"] + len(answer["text"])
                 answers.append(answer)
@@ -138,23 +139,32 @@ class ClothLoader(DataLoader):
         return instances
 
 
-class CdgpLoader(DataLoader):
+class CdgpClothLoader(DataLoader):
     """
     A Data loader designed to load instances from modified CLOTH style datasets
     in a form compatible for distractor generation. We refer to this style as CDGP
     as it is used and published in a related work.
     See the home page for CDGP style CLOTH: https://huggingface.co/datasets/AndyChiang/cloth
     """
+    _dataset_mask_str = " [MASK] "
 
     def read(self, filepath):
         instances = []
         data = read_json(filepath)
-        mask_str = " [MASK] "
         for instance in data:
             ctx = instance["sentence"]
             ans = instance["answer"]
-            start = ctx.find(mask_str)
-            ctx = ctx.replace(mask_str, ans, 1)
+            start = ctx.find(self._dataset_mask_str)
+            ctx = ctx.replace(self._dataset_mask_str, ans, 1)
             answers = [{"text": ans, "start": start, "end": start + len(ans)}]
             instances.append(InstanceCollection(context=ctx, answers=answers, distractors_collection=[instance["distractors"]]))
         return instances
+
+
+class DGenLoader(CdgpClothLoader):
+    """
+    A Data loader designed to load instances from DGen dataset
+    in a form compatible for distractor generation.
+    See the home page for DGEN Dataset: AndyChiang/dgen
+    """
+    _dataset_mask_str = "**blank**"

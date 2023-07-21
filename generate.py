@@ -7,7 +7,7 @@ from tqdm import tqdm
 from transformers import FillMaskPipeline, AutoModelForMaskedLM, AutoTokenizer
 
 from disgem import MaskedLMBasedDistractorGenerator
-from disgem.data_loader import ClothLoader, CdgpLoader, SquadLoader
+from disgem.data_loader import ClothLoader, CdgpClothLoader, SquadLoader, DGenLoader
 from disgem.util import read_json, harmonic_mean
 
 
@@ -18,7 +18,7 @@ def create_args():
 		)
 	parser.add_argument("filepath", type=str, help="Path to SQuAD style data.")
 	parser.add_argument("--data-format", type=str, default="squad",
-	                    help="Data format whether SQuAD style or CLOTH style dataset. Default 'squad'.")
+	                    help="Data format whether SQuAD style or CLOTH style dataset. Default 'squad'. Available formats [cloth, cdgp-cloth, squad, dgen]")
 	parser.add_argument("--model", type=str, default="roberta-large", help="Masked LM for distractor generation phase. Models are loaded from huggingface hub. Default 'roberta-large'.")
 	parser.add_argument("--top-k", type=int, default=3, help="Number of distractors. By default 3.")
 	parser.add_argument("--batch-size", type=int, default=1, help="Batch size, batched inference might be even slower, "
@@ -47,8 +47,10 @@ def main(args):
 		model = AutoModelForMaskedLM.from_pretrained("roberta-large")
 		tokenizer = AutoTokenizer.from_pretrained("roberta-large")
 		cloth_fill_pipe = FillMaskPipeline(model, tokenizer)
-	elif args.data_format == "cdgp":
-		data_loader = CdgpLoader(args.filepath)
+	elif args.data_format == "cdgp-cloth":
+		data_loader = CdgpClothLoader(args.filepath)
+	elif args.data_format == "dgen":
+		data_loader = DGenLoader(args.filepath)
 	else:
 		data_loader = SquadLoader(args.filepath)
 

@@ -23,3 +23,13 @@ then
 else
   echo "Directory ${WORKING_DIR}/data/DGen exists. To initiate re-download, delete the directory."
 fi
+
+if [ ! -d "$WORKING_DIR/data/SQuAD" ]
+then
+  # download SQuAD v1.1
+  mkdir "$WORKING_DIR/data/SQuAD"
+  cd "$WORKING_DIR/data/SQuAD"
+  wget https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json
+else
+  echo "Directory ${WORKING_DIR}/data/SQuAD exists. To initiate re-download, delete the directory."
+fi

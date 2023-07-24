@@ -58,7 +58,7 @@ class SquadLoader(DataLoader):
         instances = []
         raw_data = read_json(filepath)
 
-        for article in raw_data:
+        for article in raw_data["data"]:
             for paragraph in article["paragraphs"]:
                 answers = []
                 for qa in paragraph["qas"]:

@@ -11,6 +11,7 @@ class InstanceCollection:
     context: str
     answers: List[Dict[str, Union[str, int]]]
     distractors_collection: List[List[str]] = None
+    questions: List[str] = None
 
 
 @dataclass
@@ -18,6 +19,7 @@ class Instance:
     context: str
     answer: Dict[str, Union[str, int]]
     distractors: List[str] = None
+    question: str = None  # Intended for SQuAD
 
 
 class DataLoader:
@@ -34,17 +36,14 @@ class DataLoader:
     def __iter__(self) -> Instance:
         for instance in self.dataset:
             for i, ans in enumerate(instance.answers):
-                if instance.distractors_collection is not None:
-                    yield Instance(
-                            context=instance.context,
-                            answer=ans,
-                            distractors=instance.distractors_collection[i]
-                    )
-                else:
-                    yield Instance(
-                            context=instance.context,
-                            answer=ans
-                    )
+                d = instance.distractors_collection[i] if instance.distractors_collection is not None else None
+                q = instance.questions[i] if instance.questions is not None else None
+                yield Instance(
+                        context=instance.context,
+                        answer=ans,
+                        distractors=d,
+                        question=q
+                )
 
 
 class SquadLoader(DataLoader):
@@ -52,7 +51,14 @@ class SquadLoader(DataLoader):
     A Data loader designed to load instances from SQuAD style datasets in
     a form compatible for distractor generation.
     See the home page for SQuAD: https://rajpurkar.github.io/SQuAD-explorer/
+
+    Args:
+        prepend_question: (bool) If True, question is prepended to the context.
     """
+
+    def __init__(self, filepath: str, prepend_question: str = "none"):
+        self.prepend_question = prepend_question
+        super().__init__(filepath)
 
     def read(self, filepath):
         instances = []
@@ -60,13 +66,32 @@ class SquadLoader(DataLoader):
 
         for article in raw_data["data"]:
             for paragraph in article["paragraphs"]:
-                answers = []
+                ctx = paragraph["context"]
+                answers, questions = [], []
                 for qa in paragraph["qas"]:
                     answer = qa["answers"][0]
+                    question = qa["question"]
                     answer["start"] = answer.pop("answer_start")
                     answer["end"] = answer["start"] + len(answer["text"])
+                    if self.prepend_question != "none":
+                        if self.prepend_question == "begin":
+                            ctx = question + " " + paragraph["context"]
+                            answer["start"] += len(question) + 1
+                            answer["end"] += len(question) + 1
+                        elif self.prepend_question == "mid":
+                            # the following prepends just before the mask.
+                            ctx = paragraph["context"][:answer["start"]] + question + " " + paragraph["context"][answer["start"]:]
+                            answer["start"] += len(question) + 1
+                            answer["end"] += len(question) + 1
+                        elif self.prepend_question == "end":
+                            ctx = paragraph["context"] + " " + question + " " + answer["text"]
+                            answer["start"] = len(paragraph["context"]) + len(question) + 2
+                            answer["end"] = answer["start"] + len(answer["text"])
+                        instances.append(InstanceCollection(context=ctx, answers=[answer], questions=[question]))
+                        continue
                     answers.append(answer)
-                instances.append(InstanceCollection(context=paragraph["context"], answers=answers))
+                    questions.append(question)
+                instances.append(InstanceCollection(context=ctx, answers=answers, questions=questions))
         return instances
 
 
@@ -155,7 +180,11 @@ class CdgpClothLoader(DataLoader):
             ctx = instance["sentence"]
             ans = instance["answer"]
             start = ctx.find(self._dataset_mask_str)
-            ctx = ctx.replace(self._dataset_mask_str, ans, 1)
+            if start == -1:  # not-found
+                start = ctx.find(self._dataset_mask_str.lstrip())
+                ctx = ctx.replace(self._dataset_mask_str.lstrip(), ans, 1)
+            else:
+                ctx = ctx.replace(self._dataset_mask_str, ans, 1)
             answers = [{"text": ans, "start": start, "end": start + len(ans)}]
             instances.append(InstanceCollection(context=ctx, answers=answers, distractors_collection=[instance["distractors"]]))
         return instances

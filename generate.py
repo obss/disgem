@@ -1,6 +1,7 @@
 import argparse
 import json
 import warnings
+from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
@@ -34,11 +35,15 @@ def create_args():
 	parser.add_argument("--use-geometric-mean", action="store_true", help="If given, uses geometric mean to determine final ranking, otherwise uses harmonic mean.")
 	parser.add_argument("--single-mask", action="store_true", help="If given, only applies a single mask to replace the answer. It is the same as setting `dispersion=0` and `n_mask=1`.")
 	parser.add_argument("--seed", type=int, default=42, help="Seed for RNG. Default 42.")
+	parser.add_argument("--prepend-question", type=str, default="none", help="If not `none`, prepends `question` to the context to guide the distractor generation with the question. "
+	                                                                         "Allowed options are [none, begin, mid]. Default option is `none`.")
 	parser.add_argument("--evaluate", action="store_true", help="If given, starts evaluation process rather than generation. You must supply result json file for evaluation.")
 	return parser.parse_args()
 
 
 def main(args):
+	if args.prepend_question:
+		warnings.warn("`--prepend-question` is only available for squad format.")
 	if args.batch_size > 1:
 		warnings.warn("Currently, batched inference is not supported.")
 		args.batch_size = 1
@@ -51,8 +56,10 @@ def main(args):
 		data_loader = CdgpClothLoader(args.filepath)
 	elif args.data_format == "dgen":
 		data_loader = DGenLoader(args.filepath)
+	elif args.data_format == "squad":
+		data_loader = SquadLoader(args.filepath, prepend_question=args.prepend_question)
 	else:
-		data_loader = SquadLoader(args.filepath)
+		raise ValueError(f"Unknown data format {args.data_format}.")
 
 	distractor_generator = MaskedLMBasedDistractorGenerator(
 		pretrained_model_name_or_path=args.model, 
@@ -63,13 +70,21 @@ def main(args):
 		single_mask=args.single_mask
 	)
 
+	squad_answers = []
 	outputs = []
 	count = 0
-	for instance in tqdm(data_loader):
+	pbar = tqdm(data_loader)
+	for instance in pbar:
+		pbar.set_postfix({"count": count})
 		if count == args.question_limit:
 			break
 
 		ctx = instance.context
+		dgen_tokenizer = distractor_generator._pipeline.tokenizer
+		if len(dgen_tokenizer.encode(ctx)) > dgen_tokenizer.model_max_length:
+			# Skip if tokenized context does not fit into model max input length
+			continue
+
 		if args.data_format == "cloth":
 			if len(tokenizer.encode(ctx)) > tokenizer.model_max_length:
 				# Skip if tokenized context does not fit into model max input length
@@ -86,6 +101,17 @@ def main(args):
 					char_displacement = len(filled_str) - len(substr)
 					instance.answer["start"] += char_displacement
 					instance.answer["end"] += char_displacement
+		elif args.data_format == "squad":
+			if args.prepend_question:
+				pass
+			elif instance.answer in squad_answers:
+				# squad contains different questions for some answer spans. Since our
+				# framework does not depend on question, we skip these questions as
+				# it would yield the same distractors.
+				continue
+			else:
+				squad_answers.append(instance.answer)
+
 		generations = distractor_generator(
 				context=ctx,
 				answer=instance.answer,
@@ -94,16 +120,28 @@ def main(args):
 				use_harmonic_mean=not args.use_geometric_mean,
 				batch_size=args.batch_size
 		)
-		outputs.append(
-				{
-					"generations": generations,
-					"distractors": instance.distractors
-				}
-		)
+		if args.data_format == "squad":  # no gt distractors/evaluation, put context as well
+			outputs.append(
+					{
+						"context": instance.context,
+						"question": instance.question,
+						"answer": instance.answer,
+						"generations": generations
+					}
+			)
+		else:
+			outputs.append(
+					{
+						"generations": generations,
+						"distractors": instance.distractors
+					}
+			)
 		count += 1
 
 	if args.output_path is not None:
-		with open(args.output_path, "w") as fd_out:
+		output_path = Path(args.output_path)
+		output_path.parent.mkdir(parents=True, exist_ok=True)
+		with open(output_path.as_posix(), "w") as fd_out:
 			json.dump(outputs, fd_out)
 
 

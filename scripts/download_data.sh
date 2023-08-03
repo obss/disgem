@@ -14,6 +14,16 @@ else
   echo "Directory ${WORKING_DIR}/data/CLOTH exists. To initiate re-download, delete the directory."
 fi
 
+if [ ! -d "$WORKING_DIR/data/CDGP-CLOTH" ]
+then
+  # Download CDGP-CLOTH (test)
+  mkdir "$WORKING_DIR/data/CDGP-CLOTH"
+  cd "$WORKING_DIR/data/CDGP-CLOTH"
+  wget https://huggingface.co/datasets/AndyChiang/cloth/raw/main/CLOTH_test_cleaned.json
+else
+  echo "Directory ${WORKING_DIR}/data/CDGP-CLOTH exists. To initiate re-download, delete the directory."
+fi
+
 if [ ! -d "$WORKING_DIR/data/DGen" ]
 then
   # download DGen

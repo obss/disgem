@@ -180,7 +180,11 @@ class CdgpClothLoader(DataLoader):
             ctx = instance["sentence"]
             ans = instance["answer"]
             start = ctx.find(self._dataset_mask_str)
-            ctx = ctx.replace(self._dataset_mask_str, ans, 1)
+            if start == -1:  # not-found
+                start = ctx.find(self._dataset_mask_str.lstrip())
+                ctx = ctx.replace(self._dataset_mask_str.lstrip(), ans, 1)
+            else:
+                ctx = ctx.replace(self._dataset_mask_str, ans, 1)
             answers = [{"text": ans, "start": start, "end": start + len(ans)}]
             instances.append(InstanceCollection(context=ctx, answers=answers, distractors_collection=[instance["distractors"]]))
         return instances

@@ -42,7 +42,7 @@ def create_args():
 
 
 def main(args):
-	if args.prepend_question:
+	if args.prepend_question != "none":
 		warnings.warn("`--prepend-question` is only available for squad format.")
 	if args.batch_size > 1:
 		warnings.warn("Currently, batched inference is not supported.")

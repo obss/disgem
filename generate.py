@@ -18,25 +18,28 @@ def create_args():
 		description="Distractor Generator for MCQ"
 		)
 	parser.add_argument("filepath", type=str, help="Path to SQuAD style data.")
-	parser.add_argument("--data-format", type=str, default="squad",
-	                    help="Data format whether SQuAD style or CLOTH style dataset. Default 'squad'. Available formats [cloth, cdgp-cloth, squad, dgen]")
+	parser.add_argument("--data-format", type=str, default="squad", choices= ["cloth", "cdgp-cloth", "squad", "dgen"],
+	                    help="Data format whether SQuAD style or CLOTH style dataset. Default 'squad'.")
 	parser.add_argument("--model", type=str, default="roberta-large", help="Masked LM for distractor generation phase. Models are loaded from huggingface hub. Default 'roberta-large'.")
 	parser.add_argument("--top-k", type=int, default=3, help="Number of distractors. By default 3.")
 	parser.add_argument("--batch-size", type=int, default=1, help="Batch size, batched inference might be even slower, "
 	                                                              "see https://huggingface.co/docs/transformers/main_classes/pipelines#pipeline-batching. By default 1.")
 	parser.add_argument("--output-path", type=str, default=None,
 	                    help="File path to dump outputs. By default no output file is created.")
+	parser.add_argument("--output-format", type=str, default="cdgp", choices=["cdgp", "all"])
 	parser.add_argument("--question-limit", type=int, default=100, help="Question limit to stop generation at. Default 100.")
 	parser.add_argument("--dispersion", type=int, default=1, help="Dispersion parameter to determine interval for sampling num mask tokens. By default 1.")
 	parser.add_argument("--device", type=int, default=-1, help="Device for generation phase. Set -1 for cpu, numbers 0,1,2,... refer to that gpu device. By default -1.")
 	parser.add_argument("--no-minify-output", action="store_true", help="If given, no minification is placed on outputs.")
-	parser.add_argument("--strategy", type=str, default="snowball", help="Generation strategy for the generation phase.By default 'snowball'.")
+	parser.add_argument("--strategy", type=str, default="snowball", choices=["l2r", "r2l", "cocktail_shaker"],
+	                    help="Generation strategy for the generation phase.By default 'snowball'.")
 	parser.add_argument("--n-mask", type=int, default=None, help="Number of mask tokens to be replaced with answer text. Default `none`.")
 	parser.add_argument("--use-geometric-mean", action="store_true", help="If given, uses geometric mean to determine final ranking, otherwise uses harmonic mean.")
 	parser.add_argument("--single-mask", action="store_true", help="If given, only applies a single mask to replace the answer. It is the same as setting `dispersion=0` and `n_mask=1`.")
 	parser.add_argument("--seed", type=int, default=42, help="Seed for RNG. Default 42.")
-	parser.add_argument("--prepend-question", type=str, default="none", help="If not `none`, prepends `question` to the context to guide the distractor generation with the question. "
-	                                                                         "Allowed options are [none, begin, mid]. Default option is `none`.")
+	parser.add_argument("--prepend-question", type=str, default="none", choices=["none", "begin", "mid"],
+	                    help="If not `none`, prepends `question` to the context to guide the distractor generation with the question. "
+	                                                                         "Default option is `none`.")
 	parser.add_argument("--evaluate", action="store_true", help="If given, starts evaluation process rather than generation. You must supply result json file for evaluation.")
 	return parser.parse_args()
 
@@ -130,12 +133,22 @@ def main(args):
 					}
 			)
 		else:
-			outputs.append(
-					{
-						"generations": generations,
-						"distractors": instance.distractors
-					}
-			)
+			if args.output_format == "cdgp":
+				outputs.append(
+						{
+							"generations": generations,
+							"distractors": instance.distractors
+						}
+				)
+			else:
+				outputs.append(
+						{
+							"context": instance.context,
+							"answer": instance.answer,
+							"generations": generations,
+							"distractors": instance.distractors
+						}
+				)
 		count += 1
 
 	if args.output_path is not None:

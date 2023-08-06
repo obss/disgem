@@ -121,10 +121,12 @@ def main(args):
 						}
 				)
 			else:
+				# For better readability, put blank in the output
+				ctx = instance.context[:instance.answer["start"]] + " ____ " + instance.context[instance.answer["end"]:]
 				outputs.append(
 						{
-							"context": instance.context,
-							"answer": instance.answer,
+							"context": ctx,
+							"answer": instance.answer["text"],
 							"generations": generations,
 							"distractors": instance.distractors
 						}

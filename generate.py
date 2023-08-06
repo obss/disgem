@@ -52,9 +52,6 @@ def main(args):
 		args.batch_size = 1
 	if args.data_format == "cloth":
 		data_loader = ClothLoader(args.filepath)
-		model = AutoModelForMaskedLM.from_pretrained("roberta-large")
-		tokenizer = AutoTokenizer.from_pretrained("roberta-large")
-		cloth_fill_pipe = FillMaskPipeline(model, tokenizer)
 	elif args.data_format == "cdgp-cloth":
 		data_loader = CdgpClothLoader(args.filepath)
 	elif args.data_format == "dgen":
@@ -82,29 +79,12 @@ def main(args):
 		if count == args.question_limit:
 			break
 
-		ctx = instance.context
 		dgen_tokenizer = distractor_generator._pipeline.tokenizer
-		if len(dgen_tokenizer.encode(ctx)) > dgen_tokenizer.model_max_length:
+		if len(dgen_tokenizer.encode(instance.context)) > dgen_tokenizer.model_max_length:
 			# Skip if tokenized context does not fit into model max input length
 			continue
 
-		if args.data_format == "cloth":
-			if len(tokenizer.encode(ctx)) > tokenizer.model_max_length:
-				# Skip if tokenized context does not fit into model max input length
-				continue
-			pipe_out = cloth_fill_pipe(ctx, top_k=1)
-			for out in pipe_out:
-				substr = "<mask>"
-				mask_idx = ctx.find(substr)
-				filled_str = out[0]["token_str"]
-				ctx = ctx.replace(substr, filled_str, 1)
-				if -1 < mask_idx < instance.answer["start"]:
-					# For replaced mask tokens we need to fix the answer start and end
-					# positions to not break the generation process. -1 means not found.
-					char_displacement = len(filled_str) - len(substr)
-					instance.answer["start"] += char_displacement
-					instance.answer["end"] += char_displacement
-		elif args.data_format == "squad":
+		if args.data_format == "squad":
 			if args.prepend_question:
 				pass
 			elif instance.answer in squad_answers:
@@ -116,7 +96,7 @@ def main(args):
 				squad_answers.append(instance.answer)
 
 		generations = distractor_generator(
-				context=ctx,
+				context=instance.context,
 				answer=instance.answer,
 				minify_output=not args.no_minify_output,
 				top_k=args.top_k,

@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Union
+from typing import List, Dict, Union, OrderedDict
 
 from disgem.util import read_json
 
@@ -53,7 +53,8 @@ class SquadLoader(DataLoader):
     See the home page for SQuAD: https://rajpurkar.github.io/SQuAD-explorer/
 
     Args:
-        prepend_question: (bool) If True, question is prepended to the context.
+        prepend_question: (str) If other than none, question is prepended
+            to the blank/masked span in the context accordingly.
     """
 
     def __init__(self, filepath: str, prepend_question: str = "none"):
@@ -102,7 +103,6 @@ class ClothLoader(DataLoader):
     See the home page for CLOTH: https://www.cs.cmu.edu/~glai1/data/cloth/
     """
     _dataset_mask_str = " _ "
-    _pipeline_mask_str = "<mask>"
 
     def __iter__(self) -> Instance:
         """
@@ -113,7 +113,7 @@ class ClothLoader(DataLoader):
         for instance in self.dataset:
             for i, ans in enumerate(instance.answers):
                 yield Instance(
-                        context=self.replace_nth(instance.context, self._pipeline_mask_str, ans["text"], i+1),
+                        context=instance.context,
                         answer=ans,
                         distractors=instance.distractors_collection[i]
                 )
@@ -154,7 +154,7 @@ class ClothLoader(DataLoader):
             for choices, answer in zip(data["options"], data["answers"]):
                 start = ctx.find(self._dataset_mask_str)
                 ans, opt = self.get_option(choices, answer)
-                ctx = ctx.replace(self._dataset_mask_str, self._pipeline_mask_str, 1)  # only replace 1 occurance
+                ctx = ctx.replace(self._dataset_mask_str, ans, 1)  # only replace 1 occurance
                 answer = {"text": ans, "start": start}
                 answer["end"] = answer["start"] + len(answer["text"])
                 answers.append(answer)

@@ -54,17 +54,17 @@ logger = logging.get_logger(__name__)
         use_harmonic_mean (`bool`, *optional*): (default=True)
             Whether to use harmonic mean or not for ranking generations with different mask count. Usually, harmonic 
             mean tends to be fair among different token counts results in higher diversity.
-        strategy (`str`, *optional*): (default="snowball")
+        strategy (`str`, *optional*): (default="l2r")
             Determining the unmasking strategy in case of multiple masks. Options are:
-             ("snowball", "reverse_snowball", "cocktail_shaker").
-                - "snowball": Generation is done in a snowball fashion (snowball sampling) where the mask 
+             ("l2r", "r2l", "ctl").
+                - "l2r": Generation is done in a left-to-right fashion where the mask 
                 tokens are predicted one-by-one from left-to-right determining the prediction of next mask tokens. 
                 Input has multiple masks in each iteration (masks are generated in a consecutive order). That is, 
                 if we have five masks, the unmasking order is 1,2,3,4,5.
-                - "reverse_snowball": Generation is done in the same way as the snowball generation, only difference is 
-                that this implementation proceeds in a reverse order (from right-to-left, i.e first generate the 
+                - "r2l": Generation is done in a right-to-left fashion, that this implementation proceeds 
+                in a reverse order of `l2r` (from right-to-left, i.e first generate the 
                 lastest mask token). That is, if we have five masks, the unmasking order is 5,4,3,2,1.
-                - "cocktail_shaker": This generation strategy is a mix of `snowball` and `reverse_snowball` strategies 
+                - "cocktail_shaker": This generation strategy is a mix of `l2r` and `r2l` decoding strategies 
                 The name comes from the cocktail shaker sort. It procedurally generates the first mask token and 
                 the last mask token respectively between steps. That is, if we have five masks, the unmasking order is 
                 1,5,2,4,3.
@@ -102,7 +102,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         binary_output: bool = False,
         **kwargs,
     ):
-        self._strategy: str = "snowball"
+        self._decoding: str = "l2r"
         self._use_harmonic_mean: bool = True
         self._search_multiplier: int = 4
         super(DistractorGenerationPipeline, self).__init__(
@@ -130,7 +130,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         self,
         top_k: int = 3,
         targets=None,
-        strategy: str = None,
+        decoding: str = None,
         single_mask: bool = None,
         dispersion: int = None,
         n_mask: int = None,
@@ -141,8 +141,8 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         forward_params = {}
         postprocess_params = {}
 
-        if strategy is not None:
-            self._strategy = strategy
+        if decoding is not None:
+            self._decoding = decoding
 
         if use_harmonic_mean is not None:
             self._use_harmonic_mean = use_harmonic_mean
@@ -252,7 +252,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
 
     @staticmethod
     def _fix_cocktail_shaker_list(tokens) -> None:
-        """Fixes the order of input list `tokens` for `cocktail_shaker` strategy inplace."""
+        """Fixes the order of input list `tokens` for `cocktail_shaker` decoding inplace."""
         mid_idx = len(tokens) // 2
         temp_tokens = tokens[:mid_idx]
         del tokens[:mid_idx]
@@ -457,7 +457,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         cocktail_shaker: bool = False,
     ):
         """
-        Generating distractors in a snowball fashion. Generated tokens in each
+        Generating distractors in a l2r fashion. Generated tokens in each
         step determines the candidates in the next step. The generation is repeatedly
         performed until there is no mask tokens left.
         """
@@ -477,15 +477,15 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         return all_outputs
 
     def generate(self, model_inputs, forward_params, postprocess_params):
-        if self._strategy == "snowball":
+        if self._decoding == "l2r":
             return self.generate_distractors(
                 model_inputs, forward_params, postprocess_params
             )
-        elif self._strategy == "reverse_snowball":
+        elif self._decoding == "r2l":
             return self.generate_distractors(
                 model_inputs, forward_params, postprocess_params, reverse=True
             )
-        elif self._strategy == "cocktail_shaker":
+        elif self._decoding == "ctl":
             return self.generate_distractors(
                 model_inputs,
                 forward_params,
@@ -494,8 +494,8 @@ class DistractorGenerationPipeline(FillMaskPipeline):
             )
         else:
             raise ValueError(
-                f"Unknown unmasking strategy '{self._strategy}'. Supported types are "
-                f"('snowball', 'reverse_snowball', 'cocktail_shaker')"
+                f"Unknown unmasking strategy '{self._decoding}'. Supported types are "
+                f"('l2r', 'r2l', 'ctl')"
             )
 
     def run_single(

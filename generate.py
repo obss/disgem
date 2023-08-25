@@ -31,7 +31,7 @@ def create_args():
 	parser.add_argument("--dispersion", type=int, default=1, help="Dispersion parameter to determine interval for sampling num mask tokens. By default 1.")
 	parser.add_argument("--device", type=int, default=-1, help="Device for generation phase. Set -1 for cpu, numbers 0,1,2,... refer to that gpu device. By default -1.")
 	parser.add_argument("--no-minify-output", action="store_true", help="If given, no minification is placed on outputs.")
-	parser.add_argument("--strategy", type=str, default="snowball", choices=["l2r", "r2l", "cocktail_shaker"],
+	parser.add_argument("--decoding", type=str, default="l2r", choices=["l2r", "r2l", "ctl"],
 	                    help="Generation strategy for the generation phase.By default 'snowball'.")
 	parser.add_argument("--n-mask", type=int, default=None, help="Number of mask tokens to be replaced with answer text. Default `none`.")
 	parser.add_argument("--use-geometric-mean", action="store_true", help="If given, uses geometric mean to determine final ranking, otherwise uses harmonic mean.")
@@ -66,7 +66,7 @@ def main(args):
 		dispersion=args.dispersion,
 		n_mask=args.n_mask,
 		device=args.device,
-		strategy=args.strategy,
+		decoding=args.decoding,
 		single_mask=args.single_mask
 	)
 

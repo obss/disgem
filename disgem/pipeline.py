@@ -501,8 +501,8 @@ class DistractorGenerationPipeline(FillMaskPipeline):
     def run_single(
         self, inputs, preprocess_params, forward_params, postprocess_params
     ) -> DistractorGenerationOutput:
-        seed = forward_params.pop("seed")
-        set_seed(seed)
+        # seed = forward_params.pop("seed")
+        # set_seed(seed)
         model_inputs = self.preprocess(inputs, **preprocess_params)
         all_outputs = self.generate(
             model_inputs, forward_params, postprocess_params

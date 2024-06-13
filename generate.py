@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
-from transformers import FillMaskPipeline, AutoModelForMaskedLM, AutoTokenizer
+from transformers import FillMaskPipeline, AutoModelForMaskedLM, AutoTokenizer, set_seed
 
 from disgem import MaskedLMBasedDistractorGenerator
 from disgem.data_loader import ClothLoader, CdgpClothLoader, SquadLoader, DGenLoader
@@ -224,6 +224,7 @@ def evaluate(args):
 
 if __name__ == "__main__":
 	args = create_args()
+	set_seed(args.seed)
 	if args.evaluate:
 		evaluate(args)
 	else:

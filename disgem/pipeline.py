@@ -296,7 +296,6 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         answer_distractor_evaluation_results = self.evaluator(processed_input)
         check = lambda x: "contradiction" in x[0] or "neutral" in x[0]
         mask = np.apply_along_axis(check, arr=np.array(answer_distractor_evaluation_results).reshape(-1, 1), axis=-1)
-        # mask = np.array(answer_distractor_evaluation_results) != "contradiction"
         outputs_array = np.array(outputs, dtype=dict)
         filtered_distractors = outputs_array[mask]
 
@@ -501,8 +500,6 @@ class DistractorGenerationPipeline(FillMaskPipeline):
     def run_single(
         self, inputs, preprocess_params, forward_params, postprocess_params
     ) -> DistractorGenerationOutput:
-        # seed = forward_params.pop("seed")
-        # set_seed(seed)
         model_inputs = self.preprocess(inputs, **preprocess_params)
         all_outputs = self.generate(
             model_inputs, forward_params, postprocess_params

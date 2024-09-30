@@ -1,12 +1,12 @@
 # DisGeM: Distractor Generation for Multiple Choice Questions with Span Masking
 
-<a href="https://arxiv.org/abs/2409.18263v1"><img src="https://img.shields.io/badge/arXiv-2409.18263-b31b1b.svg" alt="Arxiv"></a>
+<a href="https://arxiv.org/abs/2409.18263"><img src="https://img.shields.io/badge/arXiv-2409.18263-b31b1b.svg" alt="Arxiv"></a>
 <a href="https://paperswithcode.com/paper/disgem-distractor-generation-for-multiple"><img src="https://img.shields.io/badge/DisGeM-temp?style=square&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiIHk9IjBweCIgdmlld0JveD0iMCAwIDUxMiA1MTIiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDUxMiA1MTI7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4gPHN0eWxlIHR5cGU9InRleHQvY3NzIj4gLnN0MHtmaWxsOiMyMUYwRjM7fSA8L3N0eWxlPiA8cGF0aCBjbGFzcz0ic3QwIiBkPSJNODgsMTI4aDQ4djI1Nkg4OFYxMjh6IE0yMzIsMTI4aDQ4djI1NmgtNDhWMTI4eiBNMTYwLDE0NGg0OHYyMjRoLTQ4VjE0NHogTTMwNCwxNDRoNDh2MjI0aC00OFYxNDR6IE0zNzYsMTI4IGg0OHYyNTZoLTQ4VjEyOHoiLz4gPHBhdGggY2xhc3M9InN0MCIgZD0iTTEwNCwxMDRWNTZIMTZ2NDAwaDg4di00OEg2NFYxMDRIMTA0eiBNNDA4LDU2djQ4aDQwdjMwNGgtNDB2NDhoODhWNTZINDA4eiIvPjwvc3ZnPg%3D%3D&label=paperswithcode&labelColor=%23555&color=%2321b3b6&link=https%3A%2F%2Fpaperswithcode.com%2Fpaper%2Fdisgem-distractor-generation-for-multiple" alt="DisGeM"></a>
 
 
 A Distractor Generation framework utilizing Pre-trained Language Models (PLMs) that are pre-trained with Masked Language Modeling (MLM) objective.
 
-[Paper](https://arxiv.org/abs/2409.18263v1) 
+[Paper](https://arxiv.org/abs/2409.18263) 
 
 ### Abstract
 

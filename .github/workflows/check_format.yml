@@ -52,10 +52,10 @@ jobs:
       - name: Conda env create
         run: |
           conda env create -f environment.yml && conda init bash
-          source ~/.bashrc
         
 
       - name: Lint with flake8 and black
         run: |
+          source ~/.bashrc
           conda activate disgem
           python -m scripts.run_code_style check

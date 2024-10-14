@@ -49,13 +49,11 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('**/setup.py')}}
           restore-keys: ${{ matrix.os }}-${{ matrix.python-version }}-
 
-      - name: Conda env create
+      - name: Update pip
         run: |
-          conda env create -f environment.yml && conda init bash
-        
+          python -m pip install --upgrade pip
+          pip install black==21.7b0 click==8.0.4 flake8==3.9.2 isort==5.9.2
 
       - name: Lint with flake8 and black
         run: |
-          source ~/.bashrc
-          conda activate disgem
           python -m scripts.run_code_style check

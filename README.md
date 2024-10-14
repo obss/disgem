@@ -18,6 +18,7 @@ Clone the repository.
 
 ```bash
 git clone https://github.com/obss/disgem.git
+cd disgem
 ```
 
 In the project root, create a virtual environment (preferably using conda) as follows:
@@ -42,4 +43,21 @@ The following provides an example to generate distractors for CLOTH test-high da
 
 ```shell
 python -m generate data/CLOTH/test/high --data-format cloth --top-k 3 --dispersion 0 --output-path cloth_test_outputs.json
+```
+
+
+## Contributing
+
+Format and check the code style of the codebase as follows.
+
+To check the codestyle,
+
+```bash
+python -m scripts.run_code_style check
+```
+
+To format the codebase,
+
+```bash
+python -m scripts.run_code_style format
 ```

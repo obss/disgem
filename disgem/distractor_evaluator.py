@@ -50,6 +50,7 @@ class BaseDistractorEvaluator(ABC):
     def __call__(self, inputs: Dict[str, Any], *args, **kwargs):
         pass
 
+
 class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
     """
     NLI based distractor evaluation, meant to be designed to provide classification
@@ -81,9 +82,7 @@ class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
             return sentence
         if isinstance(distractor, dict):
             distractor = distractor["token_str"]
-        context_with_distractor = replace_str(
-            sentence, distractor, answer["start"], answer["end"]
-        )
+        context_with_distractor = replace_str(sentence, distractor, answer["start"], answer["end"])
         if reverse:
             return context_with_distractor + " " + sentence
         return sentence + " " + context_with_distractor
@@ -101,12 +100,8 @@ class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
         if isinstance(distractor2, dict):
             distractor2 = distractor2["token_str"]
 
-        context_with_d1 = replace_str(
-            sentence, distractor1, answer["start"], answer["end"]
-        )
-        context_with_d2 = replace_str(
-            sentence, distractor2, answer["start"], answer["end"]
-        )
+        context_with_d1 = replace_str(sentence, distractor1, answer["start"], answer["end"])
+        context_with_d2 = replace_str(sentence, distractor2, answer["start"], answer["end"])
 
         return context_with_d1 + " " + context_with_d2
 
@@ -135,13 +130,9 @@ class NLIBasedDistractorEvaluator(BaseDistractorEvaluator):
         else:
             distractor1 = inputs["distractors"][distractor_ids[0]]
             distractor2 = inputs["distractors"][distractor_ids[1]]
-            input_text = self.preprocess_distractors(
-                **inputs, distractor1=distractor1, distractor2=distractor2
-            )
+            input_text = self.preprocess_distractors(**inputs, distractor1=distractor1, distractor2=distractor2)
             nli_output = self.get_model_output(input_text)
 
-            input_text_rev = self.preprocess_distractors(
-                    **inputs, distractor1=distractor2, distractor2=distractor1
-            )
+            input_text_rev = self.preprocess_distractors(**inputs, distractor1=distractor2, distractor2=distractor1)
             nli_output_rev = self.get_model_output(input_text_rev)
             return f"{nli_output}-{nli_output_rev}"

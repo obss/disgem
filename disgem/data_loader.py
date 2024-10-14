@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Union, OrderedDict
+from typing import Dict, List, Union
 
 from disgem.util import read_json
 
@@ -38,12 +38,7 @@ class DataLoader:
             for i, ans in enumerate(instance.answers):
                 d = instance.distractors_collection[i] if instance.distractors_collection is not None else None
                 q = instance.questions[i] if instance.questions is not None else None
-                yield Instance(
-                        context=instance.context,
-                        answer=ans,
-                        distractors=d,
-                        question=q
-                )
+                yield Instance(context=instance.context, answer=ans, distractors=d, question=q)
 
 
 class SquadLoader(DataLoader):
@@ -81,7 +76,12 @@ class SquadLoader(DataLoader):
                             answer["end"] += len(question) + 1
                         elif self.prepend_question == "mid":
                             # the following prepends just before the mask.
-                            ctx = paragraph["context"][:answer["start"]] + question + " " + paragraph["context"][answer["start"]:]
+                            ctx = (
+                                paragraph["context"][: answer["start"]]
+                                + question
+                                + " "
+                                + paragraph["context"][answer["start"] :]
+                            )
                             answer["start"] += len(question) + 1
                             answer["end"] += len(question) + 1
                         elif self.prepend_question == "end":
@@ -102,6 +102,7 @@ class ClothLoader(DataLoader):
     a form compatible for distractor generation.
     See the home page for CLOTH: https://www.cs.cmu.edu/~glai1/data/cloth/
     """
+
     _dataset_mask_str = " _ "
 
     def __iter__(self) -> Instance:
@@ -112,11 +113,7 @@ class ClothLoader(DataLoader):
         """
         for instance in self.dataset:
             for i, ans in enumerate(instance.answers):
-                yield Instance(
-                        context=instance.context,
-                        answer=ans,
-                        distractors=instance.distractors_collection[i]
-                )
+                yield Instance(context=instance.context, answer=ans, distractors=instance.distractors_collection[i])
 
     @staticmethod
     def replace_nth(text: str, substr: str, replace: str, nth: int):
@@ -145,7 +142,7 @@ class ClothLoader(DataLoader):
         assert filepath.is_dir(), "`filepath` for CLOTH dataset needs to be a directory."
 
         instances = []
-        files = sorted(filepath.glob('*.json'))
+        files = sorted(filepath.glob("*.json"))
         for p in files:
             data = read_json(p)
             ctx = data["article"]
@@ -158,7 +155,7 @@ class ClothLoader(DataLoader):
                 answer = {"text": ans, "start": start}
                 answer["end"] = answer["start"] + len(answer["text"])
                 answers.append(answer)
-                distractors.append(choices[:opt] + choices[opt+1:])  # remove the answer from choices
+                distractors.append(choices[:opt] + choices[opt + 1 :])  # remove the answer from choices
             assert len(answers) == len(distractors), "The length of the `answers` and `distractors` must be equal."
             instances.append(InstanceCollection(context=ctx, answers=answers, distractors_collection=distractors))
         return instances
@@ -171,6 +168,7 @@ class CdgpClothLoader(DataLoader):
     as it is used and published in a related work.
     See the home page for CDGP style CLOTH: https://huggingface.co/datasets/AndyChiang/cloth
     """
+
     _dataset_mask_str = " [MASK] "
 
     def read(self, filepath):
@@ -186,7 +184,9 @@ class CdgpClothLoader(DataLoader):
             else:
                 ctx = ctx.replace(self._dataset_mask_str, ans, 1)
             answers = [{"text": ans, "start": start, "end": start + len(ans)}]
-            instances.append(InstanceCollection(context=ctx, answers=answers, distractors_collection=[instance["distractors"]]))
+            instances.append(
+                InstanceCollection(context=ctx, answers=answers, distractors_collection=[instance["distractors"]])
+            )
         return instances
 
 
@@ -196,4 +196,5 @@ class DGenLoader(CdgpClothLoader):
     in a form compatible for distractor generation.
     See the home page for DGEN Dataset: AndyChiang/dgen
     """
+
     _dataset_mask_str = "**blank**"

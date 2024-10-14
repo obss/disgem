@@ -3,31 +3,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import spacy
-from transformers import (
-    FillMaskPipeline,
-    ModelCard,
-    PreTrainedTokenizer,
-    add_end_docstrings,
-    set_seed,
-)
+from transformers import FillMaskPipeline, ModelCard, PreTrainedTokenizer, add_end_docstrings
 from transformers.feature_extraction_utils import PreTrainedFeatureExtractor
-from transformers.pipelines.base import (
-    PIPELINE_INIT_ARGS,
-    ArgumentHandler,
-    GenericTensor,
-    PipelineException,
-)
+from transformers.pipelines.base import PIPELINE_INIT_ARGS, ArgumentHandler, GenericTensor, PipelineException
 from transformers.utils import logging
 
-from disgem.distractor_evaluator import (
-    NLIBasedDistractorEvaluator,
-)
-from disgem.util import (
-    DistractorGenerationOutput,
-    geometric_mean,
-    harmonic_mean,
-    replace_str,
-)
+from disgem.distractor_evaluator import NLIBasedDistractorEvaluator
+from disgem.util import DistractorGenerationOutput, geometric_mean, harmonic_mean, replace_str
 
 logger = logging.get_logger(__name__)
 
@@ -122,9 +104,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
 
     def _mask_answer(self, context: str, answer: Dict, n_mask: int):
         mask_str = " ".join([self.tokenizer.mask_token] * n_mask)
-        return replace_str(
-            context, mask_str, start_index=answer["start"], end_index=answer["end"]
-        )
+        return replace_str(context, mask_str, start_index=answer["start"], end_index=answer["end"])
 
     def _sanitize_parameters(
         self,
@@ -186,9 +166,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
 
         return preprocess_params, forward_params, postprocess_params
 
-    def get_masked_index(
-        self, input_ids: GenericTensor, as_tuple=False
-    ) -> Union[List[Tuple[int, int]], np.ndarray]:
+    def get_masked_index(self, input_ids: GenericTensor, as_tuple=False) -> Union[List[Tuple[int, int]], np.ndarray]:
         masked_index = super().get_masked_index(input_ids)
         if as_tuple:
             # noinspection PyTypeChecker
@@ -216,9 +194,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         if n_mask is not None:
             n_tokens = n_mask
         else:
-            n_tokens = len(
-                self.tokenizer(inputs["answer"]["text"])["input_ids"][1:-1]
-            )
+            n_tokens = len(self.tokenizer(inputs["answer"]["text"])["input_ids"][1:-1])
         l_disp, r_disp = self._get_lr_dispersion(n_tokens, dispersion)
         masked_inputs = [
             self._mask_answer(**inputs, n_mask=n_mask)
@@ -228,17 +204,12 @@ class DistractorGenerationPipeline(FillMaskPipeline):
                 replace=False,
             )
         ]
-        model_inputs = [
-            self.tokenizer(masked_input, return_tensors=return_tensors)
-            for masked_input in masked_inputs
-        ]
+        model_inputs = [self.tokenizer(masked_input, return_tensors=return_tensors) for masked_input in masked_inputs]
         for model_input in model_inputs:
             self.ensure_exactly_one_mask_token(model_input)
         return model_inputs
 
-    def postprocess_all_outputs(
-        self, all_outputs: List[Dict[str, Any]], top_k: int
-    ) -> List[Dict[str, Any]]:
+    def postprocess_all_outputs(self, all_outputs: List[Dict[str, Any]], top_k: int) -> List[Dict[str, Any]]:
         return sorted(all_outputs, key=lambda d: d["ranking_score"], reverse=True)
 
     @staticmethod
@@ -267,10 +238,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         sentences = self.split_sentences(inputs["context"])
         updated_answer = dict(text=inputs["answer"]["text"])
         for candid in sentences:
-            if (
-                inputs["answer"]["start"] >= candid.start_char
-                and inputs["answer"]["end"] <= candid.end_char
-            ):
+            if inputs["answer"]["start"] >= candid.start_char and inputs["answer"]["end"] <= candid.end_char:
                 start, end = self.find_span_start_end(
                     span_start=inputs["answer"]["start"],
                     span_end=inputs["answer"]["end"],
@@ -289,9 +257,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
     def _evaluate_answer_distractors(
         self, inputs: Dict[str, Any], outputs: List[Dict[str, Any]], top_k: int = 3
     ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-        processed_input = self._preprocess_input_for_distractor_evaluation(
-            inputs, outputs
-        )
+        processed_input = self._preprocess_input_for_distractor_evaluation(inputs, outputs)
         # Compare distractors with the answer
         answer_distractor_evaluation_results = self.evaluator(processed_input)
         check = lambda x: "contradiction" in x[0] or "neutral" in x[0]
@@ -307,9 +273,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         while kept_index < top_k < len(processed_input["distractors"]):
             processed_input["distractors"][kept_index]["nli_output"] = []
             for j in range(kept_index):
-                nli_out = self.evaluator(
-                    processed_input, distractor_ids=(j, kept_index)
-                )
+                nli_out = self.evaluator(processed_input, distractor_ids=(j, kept_index))
                 processed_input["distractors"][kept_index]["nli_output"].append(
                     {
                         "result": nli_out,
@@ -318,9 +282,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
                 )
                 if nli_out == "entailment-entailment":
                     increment = False
-                    discarded_distractors.append(
-                        processed_input["distractors"].pop(kept_index)
-                    )
+                    discarded_distractors.append(processed_input["distractors"].pop(kept_index))
                     break
                 increment = True
 
@@ -338,9 +300,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
                 self._fix_cocktail_shaker_list(output["token_list"])
                 self._fix_cocktail_shaker_list(output["token_str"])
             outputs[i]["token_str_list"] = output["token_str"]
-            outputs[i]["token_str"] = self.tokenizer.decode(
-                output["token_list"]
-            ).strip()
+            outputs[i]["token_str"] = self.tokenizer.decode(output["token_list"]).strip()
             outputs[i]["score"] = np.prod(output["score_list"])
             if self._use_harmonic_mean:
                 outputs[i]["ranking_score"] = harmonic_mean(output["score_list"])
@@ -360,9 +320,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
     ):
         idx = -1 if reverse else 0
         try:
-            masked_indices = self.get_masked_index(
-                model_inputs[0]["input_ids"], as_tuple=True
-            )
+            masked_indices = self.get_masked_index(model_inputs[0]["input_ids"], as_tuple=True)
             current_mask_index = masked_indices[idx]
         except (KeyError, IndexError):  # End of the generation
             return self._finalize_generation_outputs(
@@ -377,28 +335,20 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         if len(masked_indices) == 1:
             is_last = True
 
-        model_outputs = [
-            self.forward(model_input, **forward_params)
-            for model_input in model_inputs
-        ]
+        model_outputs = [self.forward(model_input, **forward_params) for model_input in model_inputs]
         postprocess_params_ = deepcopy(postprocess_params)
         if is_start:
             postprocess_params_["top_k"] *= self._search_multiplier
         else:
             postprocess_params_["top_k"] = 1
-        outputs = [
-            self.postprocess(model_output, **postprocess_params_)
-            for model_output in model_outputs
-        ]
+        outputs = [self.postprocess(model_output, **postprocess_params_) for model_output in model_outputs]
         if is_start and is_last:
             outputs = [outputs]
         new_model_inputs = []
         prev_outputs_ = []
         for i, output in enumerate(outputs):
             if is_start:
-                output_at_idx = (
-                    [output[idx]] if isinstance(output[idx], dict) else output[idx]
-                )
+                output_at_idx = [output[idx]] if isinstance(output[idx], dict) else output[idx]
                 for out in output_at_idx:
                     model_inputs_ = deepcopy(model_inputs[0])
                     model_inputs_["input_ids"][current_mask_index] = out["token"]
@@ -410,9 +360,7 @@ class DistractorGenerationPipeline(FillMaskPipeline):
                     model_inputs_ = output[0]
                     prev_outputs_.append(output[0])
                 else:
-                    model_inputs_["input_ids"][current_mask_index] = output[idx][0][
-                        "token"
-                    ]
+                    model_inputs_["input_ids"][current_mask_index] = output[idx][0]["token"]
                     prev_outputs_.append(output[idx][0])
                 new_model_inputs.append(model_inputs_)
 
@@ -425,15 +373,9 @@ class DistractorGenerationPipeline(FillMaskPipeline):
         else:
             for i, prev_output in enumerate(prev_outputs_):
                 insert_idx = 0 if reverse else len(prev_outputs[i]["token_list"])
-                prev_outputs[i]["score_list"].insert(
-                    insert_idx, prev_output["score"]
-                )
-                prev_outputs[i]["token_list"].insert(
-                    insert_idx, prev_output["token"]
-                )
-                prev_outputs[i]["token_str"].insert(
-                    insert_idx, prev_output["token_str"]
-                )
+                prev_outputs[i]["score_list"].insert(insert_idx, prev_output["score"])
+                prev_outputs[i]["token_list"].insert(insert_idx, prev_output["token"])
+                prev_outputs[i]["token_str"].insert(insert_idx, prev_output["token_str"])
                 prev_outputs[i]["sequence"] = prev_output["sequence"]
 
         if cocktail_shaker:
@@ -470,20 +412,14 @@ class DistractorGenerationPipeline(FillMaskPipeline):
                 cocktail_shaker=cocktail_shaker,
             )
             all_outputs.extend(outputs)
-        all_outputs = self.postprocess_all_outputs(
-            all_outputs, **postprocess_params
-        )
+        all_outputs = self.postprocess_all_outputs(all_outputs, **postprocess_params)
         return all_outputs
 
     def generate(self, model_inputs, forward_params, postprocess_params):
         if self._decoding == "l2r":
-            return self.generate_distractors(
-                model_inputs, forward_params, postprocess_params
-            )
+            return self.generate_distractors(model_inputs, forward_params, postprocess_params)
         elif self._decoding == "r2l":
-            return self.generate_distractors(
-                model_inputs, forward_params, postprocess_params, reverse=True
-            )
+            return self.generate_distractors(model_inputs, forward_params, postprocess_params, reverse=True)
         elif self._decoding == "ctl":
             return self.generate_distractors(
                 model_inputs,
@@ -493,20 +429,13 @@ class DistractorGenerationPipeline(FillMaskPipeline):
             )
         else:
             raise ValueError(
-                f"Unknown unmasking strategy '{self._decoding}'. Supported types are "
-                f"('l2r', 'r2l', 'ctl')"
+                f"Unknown unmasking strategy '{self._decoding}'. Supported types are " f"('l2r', 'r2l', 'ctl')"
             )
 
-    def run_single(
-        self, inputs, preprocess_params, forward_params, postprocess_params
-    ) -> DistractorGenerationOutput:
+    def run_single(self, inputs, preprocess_params, forward_params, postprocess_params) -> DistractorGenerationOutput:
         model_inputs = self.preprocess(inputs, **preprocess_params)
-        all_outputs = self.generate(
-            model_inputs, forward_params, postprocess_params
-        )
+        all_outputs = self.generate(model_inputs, forward_params, postprocess_params)
         kept, discarded = self._evaluate_answer_distractors(
             inputs=inputs, outputs=all_outputs, top_k=postprocess_params["top_k"]
         )
-        return DistractorGenerationOutput(
-            distractors=kept, discarded_distractors=discarded
-        )
+        return DistractorGenerationOutput(distractors=kept, discarded_distractors=discarded)

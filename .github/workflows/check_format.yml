@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        operating-system: [ubuntu-latest, windows-latest, macos-latest]
+        # for Python 3.10, ref https://github.com/actions/setup-python/issues/160#issuecomment-724485470
+        python-version: [3.8, 3.9, '3.10', '3.11']
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Restore Ubuntu cache
+        uses: actions/cache@v1
+        if: matrix.operating-system == 'ubuntu-latest'
+        with:
+          path: ~/.cache/pip
+          key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('**/setup.py')}}
+          restore-keys: ${{ matrix.os }}-${{ matrix.python-version }}-
+
+      - name: Restore MacOS cache
+        uses: actions/cache@v1
+        if: matrix.operating-system == 'macos-latest'
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('**/setup.py')}}
+          restore-keys: ${{ matrix.os }}-${{ matrix.python-version }}-
+
+      - name: Restore Windows cache
+        uses: actions/cache@v1
+        if: matrix.operating-system == 'windows-latest'
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('**/setup.py')}}
+          restore-keys: ${{ matrix.os }}-${{ matrix.python-version }}-
+
+      - name: Conda env create
+        run: conda env create -f environment.yml
+
+      - name: Lint with flake8 and black
+        run: |
+          conda activate disgem
+          python -m scripts.run_code_style check

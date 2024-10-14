@@ -2,12 +2,8 @@ from typing import Dict, List, Union
 
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
-from disgem.pipeline import (
-    DistractorGenerationPipeline,
-)
-from disgem.util import (
-    DistractorGenerationOutput,
-)
+from disgem.pipeline import DistractorGenerationPipeline
+from disgem.util import DistractorGenerationOutput
 
 
 class MaskedLMBasedDistractorGenerator:
@@ -61,7 +57,5 @@ class MaskedLMBasedDistractorGenerator:
                     for distractor in outputs.distractors
                 ]
             else:
-                return [
-                    distractor["token_str"] for distractor in outputs.distractors
-                ]
+                return [distractor["token_str"] for distractor in outputs.distractors]
         return outputs

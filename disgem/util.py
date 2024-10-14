@@ -39,4 +39,3 @@ class DistractorGenerationOutput(ModelOutput):
 
     distractors: List[Dict] = None
     discarded_distractors: List[Dict] = None
-

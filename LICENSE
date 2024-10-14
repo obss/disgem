@@ -78,25 +78,22 @@
       where such license applies only to those patent claims licensable
       by such Contributor that are necessarily infringed by their
       Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
-      institute patent litigation against any entity (including a
+      with the Work to which such Contribution(s) was submitted.
+
+      Patent Pending Notice: Certain aspects of the Work may be subject
+      to a pending patent application. The Contributor(s) makes no guarantees
+      regarding the outcome of the patent process, and the granting of this
+      License does not imply any waiver or release of patent rights beyond
+      what is explicitly covered here. You are advised to consult the patent
+      office for more information about the pending status.
+
+      If You institute patent litigation against any entity (including a
       cross-claim or counterclaim in a lawsuit) alleging that the Work
       or a Contribution incorporated within the Work constitutes direct
       or contributory patent infringement, then any patent licenses
       granted to You under this License for that Work shall terminate
       as of the date such litigation is filed.
 
-      Patent Disclaimer: Pending Patent Applications. Please be advised
-      that a patent application is pending for certain inventions or
-      technologies described or used within the Work. This License does
-      not grant any rights under any pending patent applications until such
-      patents are issued. If such patents are issued, any licenses for the
-      Work will be subject to the terms and scope of those patents. You are
-      advised to consult with legal counsel to fully understand the implications
-      of the patent status before using or distributing the Work or any
-      derivative thereof. Until the patent process is finalized, no explicit
-      or implicit patent licenses are granted under this License, except
-      as may be required by applicable law.
 
    4. Redistribution. You may reproduce and distribute copies of the
       Work or Derivative Works thereof in any medium, with or without
@@ -161,6 +158,12 @@
       PARTICULAR PURPOSE. You are solely responsible for determining the
       appropriateness of using or redistributing the Work and assume any
       risks associated with Your exercise of permissions under this License.
+
+      Patent Disclaimer: As the Work is subject to a pending patent,
+      no warranties or guarantees are made regarding any patents that may
+      be granted in the future. The responsibility to check for patents
+      on any implementation of the Work is on You, and You assume all risks
+      regarding patent claims or potential infringements.
 
    8. Limitation of Liability. In no event and under no legal theory,
       whether in tort (including negligence), contract, or otherwise,

@@ -50,9 +50,11 @@ jobs:
           restore-keys: ${{ matrix.os }}-${{ matrix.python-version }}-
 
       - name: Conda env create
-        run: conda env create -f environment.yml
+        run: |
+          conda env create -f environment.yml && conda init bash
+        
 
       - name: Lint with flake8 and black
         run: |
-          conda init bash && conda activate disgem
+          conda activate disgem
           python -m scripts.run_code_style check

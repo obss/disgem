@@ -54,5 +54,5 @@ jobs:
 
       - name: Lint with flake8 and black
         run: |
-          conda activate disgem
+          conda init bash && conda activate disgem
           python -m scripts.run_code_style check
